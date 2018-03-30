@@ -10,6 +10,7 @@ import networkx as nx
 from io import StringIO
 
 from DataViz.models import Contrat, Approbateur
+
 # Create your views here.
 # BEGIN ANSIBLE MANAGED BLOCK
 def index(request):
