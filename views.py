@@ -8,6 +8,7 @@ from django.db import connection
 from django import forms
 import networkx as nx
 from io import StringIO
+import json as js
 
 from DataViz.models import Contrat, Approbateur
 
@@ -91,7 +92,7 @@ def tree(request, workstation="undefined"):
 
 
 	#Generate context for the tree	
-	context = {'graph':"/front/json/"+workstation,
+	context = {'graph':"/dataviz/json",
 				
 			}
 
@@ -102,7 +103,7 @@ def json(r):
 	listNode = {}
 	listContratDict = {}
 	G=nx.DiGraph()
-	nx.set_node_attributes(G, 'key', "value")
+	#nx.set_node_attributes(G, "value", "nope")
 	#G.add_node(1)
 	
 	#print(Listcontrat)
@@ -114,25 +115,32 @@ def json(r):
 	## Add the Approbateur as level one leaf
 	ListApprob = Approbateur.objects.all()
 	for approb in ListApprob:
-		G.add_node(approb.approb_id, value=approb.approbateur)
+		G.add_node(approb.approb_id, name=approb.approbateur)
 		G.add_edge(-1,approb.approb_id)
+		print("Test")
 
 	# Attach to contract to the approbateur
 	ListContracts = Contrat.objects.all()
 	for contrat in ListContracts:
 		try:
 			currentApprob = Approbateur.objects.filter(approbateur=contrat.approbateur)[0]
-			G.add_node(contrat.contrat_id, value=contrat.montant)
-			G.add_edge(currentApprob.approb_id,contrat.contrat_id)
+			#G.add_node(contrat.contrat_id, value=contrat.montant)
+			#G.add_edge(currentApprob.approb_id,contrat.contrat_id)
 			
 		except KeyError:
 			print("Err")
+			#G.add_node(contrat.contrat_id, name=contrat.montant)
+			#G.add_edge(-1,contrat.contrat_id)
 
-
-
+	# G.add_node(contrat.contrat_id, value=contrat.montant)
+	# G.add_edge(-1,contrat.contrat_id)
+	print(nx.edges(G))
 	print("lolilol")
-	context = json_graph.tree_data(G, -1)
+
+	data = json_graph.tree_data(G, root=-1)
+	context = js.dumps(data)
+	print(context)
 
 
-	context = {}
-	return JsonResponse(context)
+	#context = {}
+	return HttpResponse(context)
