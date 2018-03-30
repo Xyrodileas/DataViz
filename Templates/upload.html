@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% load bootstrap3 %}
+
+{% block title %}Hunting2{% endblock %}
+
+{% block bootstrap3_extra_head %}
+
+{% endblock %}
+
+{% block content %}
+  <style type="text/css">
+  #Contrats
+  {
+    margin-left:10%;
+  }
+  </style>
+
+<form action="success" enctype="multipart/form-data" method="post" class="form" id="Contrats">
+  {% csrf_token %}
+  {% bootstrap_form Contrats %}
+  {% buttons %}
+    <button type="submit" class="btn btn-primary">
+      {% bootstrap_icon "star" %} Submit
+    </button>
+  {% endbuttons %}
+</form>
+
+
+{% endblock %}
+
+{% block bootstrap3_extra_script %}
+
+{% endblock %}
