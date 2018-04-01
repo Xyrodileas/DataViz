@@ -9,4 +9,6 @@ urlpatterns = [
     path('upload_data', views.upload_data, name='upload'),
     path('json', views.json, name='json'),
     path('tree', views.tree, name='tree'),
+    path('force_layout_json', views.force_layout_json, name='force_layout_json'),
+    path('force_layout', views.force_layout, name='force_layout'),
 ]

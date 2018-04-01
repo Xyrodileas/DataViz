@@ -144,3 +144,59 @@ def json(r):
 
 	#context = {}
 	return HttpResponse(context)
+
+def force_layout_json(request):
+
+	# Prepare first nodes
+
+	# Array to store nodes:
+	arrayNodeLayout = []
+	arrayForceLayout = []
+	colorScale = {}
+	lastColor = 2
+	ListApprob = Approbateur.objects.all()
+	arrayNodeLayout.append({"id" : "ROOT", "group" : 0})
+	for approb in ListApprob:
+		arrayNodeLayout.append({"id" : approb.approbateur, "group" : 1})
+		arrayForceLayout.append({"source" : "ROOT", "target" : approb.approbateur , "value": 1})
+
+	ListContracts = Contrat.objects.all()
+	# Let's create a color scale
+	for contrat in ListContracts:
+		try:
+			if(colorScale[contrat.service]):
+				pass
+		except:
+			colorScale[contrat.service] = lastColor
+			lastColor += 1
+
+	
+
+	for contrat in ListContracts:
+		arrayNodeLayout.append({"id" : contrat.contrat_id, "group" : colorScale[contrat.service]})
+		arrayForceLayout.append({"source" : contrat.approbateur, "target" : contrat.contrat_id , "value": contrat.montant*0.001})
+
+		
+
+	DictResult = {}
+	DictResult["nodes"] = arrayNodeLayout
+	DictResult["links"] = arrayForceLayout
+	context = js.dumps(DictResult)
+
+	return HttpResponse(context)
+
+
+
+def force_layout(request):
+	print()
+	template = loader.get_template('force_layout.html')
+	
+
+
+	#Generate context for the tree	
+	context = {'graph':"/dataviz/force_layout_json",				
+			}
+
+	return HttpResponse(template.render(context, request))
+
+
