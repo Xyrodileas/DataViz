@@ -9,7 +9,7 @@ from django import forms
 import networkx as nx
 from io import StringIO
 import json as js
-from django.db.models import Sum
+from django.db.models import Sum, Count, Q
 from DataViz.models import Contrat, Approbateur
 
 # Create your views here.
@@ -214,4 +214,80 @@ def force_layout(request):
 
 	return HttpResponse(template.render(context, request))
 
+def treemap_json(request):
 
+	# Prepare first nodes
+
+	# Array to store nodes:
+	arrayApprobateurs = []
+	arrayRoot = []
+
+	ListApprob = Approbateur.objects.all()
+
+	
+	for approb in ListApprob:
+		#print(approb.approbateur)
+		children = []
+
+		ListContracts = Contrat.objects.all().filter(approbateur=approb.approbateur)
+		for contract in ListContracts:
+			children.append({ "name" : contract.description, "size" : contract.montant })
+
+		arrayApprobateurs.append({ "name" : approb.approbateur, "children" : children })
+			
+
+	rootLeaf = {"name" : "Montréal", "children" : arrayApprobateurs}
+
+	
+	context = js.dumps(rootLeaf)
+
+	return HttpResponse(context)
+
+def treemap(request):
+	print()
+	template = loader.get_template('treemap.html')
+	
+
+
+	#Generate context for the tree	
+	context = {'graph':"/dataviz/treemap_json",				
+			}
+
+	return HttpResponse(template.render(context, request))
+
+def concentric_json(request, skip=0):
+
+	# CONST
+	maxServices = 15
+	currentService = skip
+	print(skip)
+	# Array to store nodes:
+	arrayRoot = []
+
+	ListServices = Contrat.objects.values('service').annotate(serviceNumber=Count('contrat_id')).annotate(montantTot=Sum('montant')).annotate(year2017=Count('date', filter=Q(date__year=2015))).annotate(moreThan10K=Count('contrat_id', filter=Q(montant__gte=1000)))
+
+	
+	for service in ListServices:
+		#print(currentService)
+		arrayRoot.append({ "service" : service["service"], "nbrContrat" : service["serviceNumber"], "montantTot" : service["montantTot"], "moreThan10K": service["moreThan10K"], "year2017" : service["year2017"] })
+	
+	
+	context = js.dumps(arrayRoot)
+
+	return HttpResponse(context)
+
+def concentric(request, skip=0):
+	print()
+	template = loader.get_template('concentric.html')
+	
+
+
+	#Generate context for the tree	
+	if(skip == 0):
+		context = {'graph':"/dataviz/concentric_json",				
+				}
+	else:
+		context = {'graph':"/dataviz/concentric_json/" + skip + "/",				
+		}
+
+	return HttpResponse(template.render(context, request))

@@ -3,272 +3,127 @@
 {% load staticfiles %}
 {% load bootstrap3 %}
 
-{% block title %}Hunting - ProcessTree{% endblock %}
+{% block title %}DataViz - TreeMap{% endblock %}
 
 {% block bootstrap3_extra_head %}
 
-<script src="https://d3js.org/d3.v3.min.js"></script>
+<style>
 
-<script type="text/javascript">
-var treePath = "/dataviz/json";
-
-function togglePort()
-{
-  if (document.getElementById('togglePortCheckbox').checked) 
-  {
-      treePath = "/front/json/tree_openport/";
-  } else {
-      treePath = "/front/json";
-  }
+form {
+  font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+  margin-left: 75px;
 }
-</script>
+
+svg {
+  font: 10px sans-serif;
+  margin-left: 25px;
+}
+
+</style>
+<script src="https://d3js.org/d3.v4.min.js"></script>
 {% endblock %}
 
 {% block content %}
-  <style type="text/css">
 
-        #workstation {
-          margin-left:15%;
-          margin-right:50%;
-        }
+<svg width="1200" height="570"></svg>
+<form>
+  <label><input type="radio" name="mode" value="sumBySize" checked> Size</label>
+  <label><input type="radio" name="mode" value="sumByCount"> Count</label>
+</form>
 
+<script>
 
+var svg = d3.select("svg"),
+    width = +svg.attr("width"),
+    height = +svg.attr("height");
 
-    </style>
+var fader = function(color) { return d3.interpolateRgb(color, "#fff")(0.2); },
+    color = d3.scaleOrdinal(d3.schemeCategory20.map(fader)),
+    format = d3.format(",d");
 
-	
-	<style type="text/css">
+var treemap = d3.treemap()
+    .tile(d3.treemapResquarify)
+    .size([width, height])
+    .round(true)
+    .paddingInner(1);
 
-        .node {
-          cursor: pointer;
-        }
+d3.json("{{ graph }}", function(error, data) {
+  if (error) throw error;
 
-        .node circle {
-          fill: #000;
-          stroke: steelblue;
-          stroke-width: 1.5px;
-        }
+  var root = d3.hierarchy(data)
+      .eachBefore(function(d) { d.data.id = (d.parent ? d.parent.data.id + "." : "") + d.data.name; })
+      .sum(sumBySize)
+      .sort(function(a, b) { return b.height - a.height || b.value - a.value; });
 
-        .node text {
-          font: 10px sans-serif;
-        }
+  treemap(root);
 
-        .link {
-          fill: none;
-          stroke: #ccc;
-          stroke-width: 1.5px;
-        }
+  var cell = svg.selectAll("g")
+    .data(root.leaves())
+    .enter().append("g")
+      .attr("transform", function(d) { return "translate(" + d.x0 + "," + d.y0 + ")"; });
 
+  cell.append("rect")
+      .attr("id", function(d) { return d.data.id; })
+      .attr("width", function(d) { return d.x1 - d.x0; })
+      .attr("height", function(d) { return d.y1 - d.y0; })
+      .attr("fill", function(d) { return color(d.parent.data.id); });
 
-    </style>
+  cell.append("clipPath")
+      .attr("id", function(d) { return "clip-" + d.data.id; })
+    .append("use")
+      .attr("xlink:href", function(d) { return "#" + d.data.id; });
 
+  cell.append("text")
+      .attr("clip-path", function(d) { return "url(#clip-" + d.data.id + ")"; })
+    .selectAll("tspan")
+      .data(function(d) { return d.data.name.split(/(?=[A-Z][^A-Z])/g); })
+    .enter().append("tspan")
+      .attr("x", 4)
+      .attr("y", function(d, i) { return 13 + i * 10; })
+      .text(function(d) { return d; });
 
+  cell.append("title")
+      .text(function(d) { return d.data.id + "\n" + format(d.value); });
 
-<script type="text/javascript">
+  d3.selectAll("input")
+      .data([sumBySize, sumByCount], function(d) { return d ? d.name : this.value; })
+      .on("change", changed);
 
+  var timeout = d3.timeout(function() {
+    d3.select("input[value=\"sumByCount\"]")
+        .property("checked", true)
+        .dispatch("change");
+  }, 2000);
 
+  function changed(sum) {
+    timeout.stop();
 
-function createTree(mygraph){
-    d3.json(mygraph, function(error, flare) {
-        if (error) throw error;
+    treemap(root.sum(sum));
 
-        root = flare;
-        root.x0 = height / 2;
-        root.y0 = 0;
-
-    function collapse(d) {
-        if (d.children) {
-            d._children = d.children;
-            d._children.forEach(collapse);
-            d.children = null;
-        }
-    }
-
-    //root.children.forEach(collapse);
-    update(root);
-    });
-}
-var margin = {top: 20, right: 120, bottom: 20, left: 220},
-    width = 1500 - margin.right - margin.left,
-    height = 1200 - margin.top - margin.bottom;
-
-var i = 0,
-    duration = 750,
-    root;
-
-var tree = d3.layout.tree()
-    .size([height, width]);
-
-var diagonal = d3.svg.diagonal()
-    .projection(function(d) { return [d.y, d.x]; });
-
-var svg = d3.select("body").append("svg")
-    .attr("width", width + margin.right + margin.left)
-    .attr("height", height + margin.top + margin.bottom)
-  .append("g")
-    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-createTree("{{graph}}");
-
-d3.select(self.frameElement).style("height", "800px");
-
-function update(source) {
-
-  //Set the dropdown value if needed
-  var URL = window.location.href;
-  var pattern = /aff4:\/.\..{16}/;
-  var result = pattern.exec(URL);
-  var workstation = ""
-  if(result) {
-    document.getElementById('id_machine').value=result[0];
+    cell.transition()
+        .duration(750)
+        .attr("transform", function(d) { return "translate(" + d.x0 + "," + d.y0 + ")"; })
+      .select("rect")
+        .attr("width", function(d) { return d.x1 - d.x0; })
+        .attr("height", function(d) { return d.y1 - d.y0; });
   }
-  // Compute the new tree layout.
-  var nodes = tree.nodes(root).reverse(),
-      links = tree.links(nodes);
+});
 
-  // Normalize for fixed-depth.
-  nodes.forEach(function(d) { d.y = d.depth * 180; });
-
-  // Update the nodes…
-  var node = svg.selectAll("g.node")
-      .data(nodes, function(d) { return d.id || (d.id = ++i); });
-
-  // Enter any new nodes at the parent's previous position.
-  var nodeEnter = node.enter().append("g")
-      .attr("class", "node")
-      .attr("transform", function(d) { return "translate(" + source.y0 + "," + source.x0 + ")"; })
-      .on("click", click);
-
-  nodeEnter.append("circle")
-      .attr("r", 1e-6)
-      .style("fill", function(d) { return d._children ? "lightsteelblue" : "#fff"; });
-
-  nodeEnter.append("text")
-      .attr("x", function(d) { return d.children || d._children ? -10 : 10; })
-      .attr("dy", ".35em")
-      .attr("text-anchor", function(d) { return d.children || d._children ? "end" : "start"; })
-      .text(function(d) { 
-        if(d.nbrSocket == 0 || !d.nbrSocket ) {
-          return d.name;
-        }
-        else {
-          return d.name + " (" + d.nbrSocket + ")"; 
-        }
-    })
-      .style("fill-opacity", 1e-6);
-
-  // Transition nodes to their new position.
-  var nodeUpdate = node.transition()
-      .duration(duration)
-      .attr("transform", function(d) { return "translate(" + d.y + "," + d.x + ")"; });
-
-  nodeUpdate.select("circle")
-      .attr("r", 4.5)
-      .attr("data-toggle", "tooltip")
-      .attr("title", function(d) {
-        return d.cmdline + "\n" + d.sockets
-      })
-      .style("fill", function(d) {
-        if(d.name=="powershell.exe ") {
-          return "#e00"
-        }
-        else if(d.name == "cmd.exe "){
-            return "#ff0"
-        }
-        else if(d.nbrSocket && d.nbrSocket > 0) {
-          return "orange"
-        }
-        else if(!d.nbrSocket) {
-          return "green"
-        }
-        else {
-              return d._children ? "lightsteelblue" : "#fff"; 
-        }
-
-    });
-  
-  $('[data-toggle="tooltip"]').tooltip();
-
-  nodeUpdate.select("text")
-      .style("fill-opacity", 1);
-
-  // Transition exiting nodes to the parent's new position.
-  var nodeExit = node.exit().transition()
-      .duration(duration)
-      .attr("transform", function(d) { return "translate(" + source.y + "," + source.x + ")"; })
-      .remove();
-
-  nodeExit.select("circle")
-      .attr("r", 1e-6);
-
-  nodeExit.select("text")
-      .style("fill-opacity", 1e-6);
-
-  // Update the links…
-  var link = svg.selectAll("path.link")
-      .data(links, function(d) { return d.target.id; });
-
-  // Enter any new links at the parent's previous position.
-  link.enter().insert("path", "g")
-      .attr("class", "link")
-      .attr("d", function(d) {
-        var o = {x: source.x0, y: source.y0};
-        return diagonal({source: o, target: o});
-      });
-
-  // Transition links to their new position.
-  link.transition()
-      .duration(duration)
-      .attr("d", diagonal);
-
-  // Transition exiting nodes to the parent's new position.
-  link.exit().transition()
-      .duration(duration)
-      .attr("d", function(d) {
-        var o = {x: source.x, y: source.y};
-        return diagonal({source: o, target: o});
-      })
-      .remove();
-
-  // Stash the old positions for transition.
-  nodes.forEach(function(d) {
-    d.x0 = d.x;
-    d.y0 = d.y;
-  });
+function sumByCount(d) {
+  return d.children ? 0 : 1;
 }
 
-// Toggle children on click.
-function click(d) {
-  if (d.children) {
-    d._children = d.children;
-    d.children = null;
-  } else {
-    d.children = d._children;
-    d._children = null;
-  }
-  update(d);
+function sumBySize(d) {
+  return d.size;
 }
 
-
-
-function processForm(e) {
-    if (e.preventDefault) e.preventDefault();
-    var nameValue = document.getElementById("id_machine").value;
-    url = document.location.href
-    url.replace(/aff4:\/.\..{16}/i, nameValue)
-    window.history.pushState('page2', 'Title', "/DataViz/json");
-    createTree(treePath);
-
-    return true;
-}
-
-var form = document.getElementById('workstation');
-if (form.attachEvent) {
-    form.attachEvent("submit", processForm);
-} else {
-    form.addEventListener("submit", processForm);
-}
 </script>
+
+
+
+
+
+  
 
 
 {% endblock %}

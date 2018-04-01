@@ -1,0 +1,267 @@
+{% extends 'base.html' %}
+
+{% load staticfiles %}
+{% load bootstrap3 %}
+
+{% block title %}DataViz - TreeMap{% endblock %}
+
+{% block bootstrap3_extra_head %}
+
+ <link href="https://unpkg.com/basscss@8.0.2/css/basscss.min.css" rel="stylesheet">
+<style>
+        body { font-family: Consolas, monaco, monospace; padding-left: 20px;}
+        .js-circle {
+            background: #eee;
+            position: relative;
+            margin: 3px;
+            width: 320px;
+            height: 360px;
+            padding-left: 8px;
+        }
+        a {
+            text-decoration: none;
+            color: #454545;
+        }
+        a:hover {
+            color: tomato;
+        }
+        text.legend-labels {
+            font-size: 11px;
+            fill: #fff;
+            letter-spacing: 2px;
+            pointer-events: none;
+        }
+        rect.legend-items:hover {
+            opacity: 0.8; 
+        }
+        h1.js-uni-title {
+            font-size: 14px;
+            letter-spacing: 2px;
+            max-width: 250px;
+            font-weight: normal;
+        }
+        h2.js-rank {
+            position: absolute;
+            white-space: nowrap; 
+            width: 170px; 
+            overflow: hidden;
+            text-overflow: ""; 
+            top: 50px;
+            right: 20px;
+            color: #000;
+        }
+        h3.js-circle-info {
+            position: absolute;
+            bottom: 5px;
+            left: 8px;
+        }
+        span {
+            color: #888;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+    </style>
+
+{% endblock %}
+
+{% block content %}
+
+
+<div id="vis" class="flex flex-wrap max-width-1600 mx-auto my2 js-circles"></div>
+
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<!-- d3 code -->
+<script>
+  const render = (function () {
+
+    // keys for concentric circles
+    const dataKeys = ['montantTot', 'nbrContrat', 'year2017', "moreThan10K"]
+
+    // helpers
+    const width = 300
+    const height = 250
+
+    const t = d3.transition()
+        .duration(400)
+        .ease(d3.easeLinear)
+
+    // colour each circle
+    const sequentialScale = d3.scaleSequential()
+        .domain([0, 4])
+        .interpolator(d3.interpolateRainbow)
+    // colour each circle
+    const col = d3.scaleOrdinal()
+        .domain(dataKeys)
+        .range(['#ab6dc5','#9ec94d','#76b021', '#44a4f6'])
+
+    const labels = d3.scaleOrdinal()
+        .domain(dataKeys)
+        .range(['Montant Tot :','Nbr Contrats : ', "Nbr Contrat en 2017 : ", "Contrat suppérieur à 10K : "])
+
+    function update(data, bindTo) {
+
+        const maxNbrContrat = d3.max(data, d => d.nbrContrat)
+        // area of each circle taking the highest number of students 
+        const sqrtScale = d3.scaleSqrt()
+            .domain([0, maxNbrContrat])
+            .range([0, 110])
+        // render grid
+        const update = d3.select(bindTo)
+            .selectAll('.js-circle')
+            .data(data)
+
+        update.exit().remove()
+
+        const enter = update.enter()
+            .append('div')
+            .attr('class', 'block js-circle')
+        // create a title which is a link
+        enter.merge(update)
+            .append('a')
+            .attr('href', d => d.link)
+            .attr('class', 'block')
+            .append('h1')
+            .attr('class', 'js-uni-title')
+            .append('a')
+            .text(d => d.service)
+        enter.merge(update).append('h2')
+            .attr('class', 'js-rank')
+            .text(d => d.montantTot)
+        // svg in each grid
+        const svg = enter.merge(update).append('svg')
+            .attr('class', (d, i) => 'js-svg svg-' + i)
+            .attr('width', width)
+            .attr('height', height)
+
+        // label for selected circle
+        const circleInfo = enter.merge(update)
+            .append('h3')
+            .attr('class', (d, i) => 'block js-circle-info js-circle-info-' + i)
+            .html(d => `<span>Contrat du service :</span> ${d.nbrContrat}`)
+
+        // append set of circles for each of the datakeys
+        // to each grid item
+        data.forEach(function(o, n) {
+            // extract the data and order it 
+            // ensuring circles render largest to smallest
+            let list = []
+            // create a list using the keys for the circles and current data object
+            dataKeys.forEach(function(_k, _n) {
+                return list.push(
+                    {
+                        value: o[_k], // reference the value using the key
+                        name: _k // reference the name
+                    }
+                )
+            })
+            // sort it in descending order
+            list.sort(function(x, y) {
+                return d3.descending(y.value, x.value)
+            })
+            console.log('list', list)
+            // render the set of circles 
+            d3.select('.svg-' + n).selectAll('circle')
+                .data(list)
+                .enter().append('circle')
+                .attr('class', (d, i) => `cc c-${i} ${d.name}`)
+                .attr('r', d => {
+                    return sqrtScale(o[d.name])
+                })
+                .attr('cx', width/2)
+                .attr('cy', height/2)
+                .style('fill', 'transparent')
+                .style('stroke-width', 4)
+                .style('stroke', (d) => col(d.name)) 
+                .on('mouseover', function(d, i) {
+                    mouseoverValues(d.name)
+                    mouseOverHighlight(i)
+                })
+                .on('mouseout', function(d) {
+                    mouseOutReset(d)
+                })
+        })
+
+        function mouseoverValues(key) {
+            circleInfo
+                .html(d => `<span>${labels(key)}</span> ${d[key]}`)
+        }
+
+        function mouseOverHighlight(index) {
+            d3.selectAll('.cc')
+                .interrupt()
+                .transition(t)
+                .style('opacity', 0.1)
+            d3.selectAll('.c-' + index)
+                .interrupt()
+                .transition(t)
+                .style('opacity', 1)
+        }
+        function mouseOutReset(d) {
+            d3.selectAll('.cc')
+                .interrupt()
+                .transition(t)
+                .style('opacity', 1)
+            circleInfo
+                .html(d => `<span>Nbr Contrat:</span> ${d.nbrContrat}`)
+        }
+
+        function legend() {
+            const legend = d3.select('#legend').append('svg')
+                .attr('class', 'js-legend')
+                .attr('width', 700)
+                .attr('height', 40)
+            legend.selectAll('rect.legend-items')
+                .data(dataKeys)
+                .enter().append('rect')
+                .attr('class', 'legend-items')
+                .attr('width', 163)
+                .attr('height', 30)
+                .attr('fill', d => col(d)) 
+                .attr('y', 0)
+                .attr('x', (d, i) => i * 166)
+                .on('mouseover', function(d, i) {
+                    mouseoverValues(d)
+                    mouseOverHighlight(i)
+                })
+                .on('mouseout', function(d) {
+                    mouseOutReset(d)
+                })
+            legend.selectAll('text.legend-lables')
+                .data(dataKeys)
+                .enter().append('text')
+                .attr('class', 'legend-labels')
+                .attr('y', 20)
+                .attr('x', (d, i) => i * 166 + 10)
+                .text(d => labels(d))
+            
+        }
+        legend();
+    }
+
+    return update
+    
+})()
+
+</script>
+<!-- render code -->
+<script>
+    d3.json('{{ graph }}', function(error, data) {
+        render(data, '#vis')
+    })
+    
+    // change frame height
+    d3.select(self.frameElement).style('height', '1250px');
+</script>
+
+
+
+
+  
+
+
+{% endblock %}
+
+{% block bootstrap3_extra_script %}
+
+{% endblock %}
