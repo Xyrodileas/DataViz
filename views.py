@@ -9,7 +9,7 @@ from django import forms
 import networkx as nx
 from io import StringIO
 import json as js
-
+from django.db.models import Sum
 from DataViz.models import Contrat, Approbateur
 
 # Create your views here.
@@ -26,6 +26,7 @@ def upload_data(request):
 	
 	class UploadContractForm(forms.Form):
 		Contrats = forms.FileField(label='Contrats')
+
 
 
 
@@ -77,7 +78,8 @@ def upload_success(request):
 					s.LoadFromCSVLine(row)
 					s.save()
 				# Check if approbateur exist
-				NbrApprob = Approbateur.objects.filter(approbateur = row['APPROBATEUR']).count()
+				approbName = row['APPROBATEUR'].replace("É", "E").replace("Ç", "C").replace("È", "E").lower()
+				NbrApprob = Approbateur.objects.filter(approbateur = approbName).count()
 				if NbrApprob < 1 :
 					a = Approbateur()
 					a.LoadFromCSVLine(row)
@@ -152,16 +154,15 @@ def force_layout_json(request):
 	# Array to store nodes:
 	arrayNodeLayout = []
 	arrayForceLayout = []
+	sumPerApprob = {}
 	colorScale = {}
 	lastColor = 2
-	ListApprob = Approbateur.objects.all()
-	arrayNodeLayout.append({"id" : "ROOT", "group" : 0})
-	for approb in ListApprob:
-		arrayNodeLayout.append({"id" : approb.approbateur, "group" : 1})
-		arrayForceLayout.append({"source" : "ROOT", "target" : approb.approbateur , "value": 1})
+
+
 
 	ListContracts = Contrat.objects.all()
 	# Let's create a color scale
+
 	for contrat in ListContracts:
 		try:
 			if(colorScale[contrat.service]):
@@ -170,13 +171,27 @@ def force_layout_json(request):
 			colorScale[contrat.service] = lastColor
 			lastColor += 1
 
-	
+		if(contrat.approbateur == "INTERFACE"):
+			print("encule")
+			print(contrat)
+		if(contrat.approbateur == "Interface"):
+			print("non-encule")
+			print(contrat)
+		arrayNodeLayout.insert(0, {"id" : contrat.contrat_id, "group" : colorScale[contrat.service]})
+		arrayForceLayout.insert(0, {"source" : contrat.approbateur, "target" : contrat.contrat_id , "value": contrat.montant*0.001})
 
-	for contrat in ListContracts:
-		arrayNodeLayout.append({"id" : contrat.contrat_id, "group" : colorScale[contrat.service]})
-		arrayForceLayout.append({"source" : contrat.approbateur, "target" : contrat.contrat_id , "value": contrat.montant*0.001})
+	ListApprob = Approbateur.objects.all()
 
-		
+	arrayNodeLayout.append({"id" : "ROOT", "group" : 0})
+	for approb in ListApprob:
+		print(approb.approbateur)
+
+		iTotalContrats = Contrat.objects.all().filter(approbateur=approb.approbateur).aggregate(Sum('montant'))
+
+		if(iTotalContrats["montant__sum"]):
+			arrayNodeLayout.append({"id" : approb.approbateur, "group" : 1})
+			arrayForceLayout.append({"source" : "ROOT", "target" : approb.approbateur , "value": (iTotalContrats["montant__sum"]*0.001)/3})
+
 
 	DictResult = {}
 	DictResult["nodes"] = arrayNodeLayout

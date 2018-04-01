@@ -6,7 +6,7 @@ class Approbateur(models.Model):
     approb_id = models.AutoField(primary_key=True)
 
     def LoadFromCSVLine(self, csvline):
-        self.approbateur = csvline["APPROBATEUR"]
+        self.approbateur = csvline["APPROBATEUR"].replace("É", "E").replace("Ç", "C").replace("È", "E").lower()
 
 
 #Create your models here.
@@ -27,7 +27,7 @@ class Contrat(models.Model):
         self.numero = csvline["NUMÉRO"]
         self.fournisseur = csvline["NOM DU FOURNISSEUR"]
         self.date = csvline["DATE D'APPROBATION"]
-        self.approbateur = csvline["APPROBATEUR"]
+        self.approbateur = csvline["APPROBATEUR"].replace("É", "E").replace("Ç", "C").replace("È", "E").lower()
         self.description = csvline["DESCRIPTION"]
         self.service = csvline["SERVICE"]
         self.activite = csvline["ACTIVITÉ"]
