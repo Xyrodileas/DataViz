@@ -307,7 +307,7 @@ def circular_tree_json(request, skip=0):
 
 	#arrayRoot.append("root,")
 	#csv_data = csv_data + ("root,",'')
-	writer.writerow(['flare', ''	])
+	writer.writerow(['MTL', ''	])
 
 	for contract in ListContract:
 		try:
@@ -320,12 +320,12 @@ def circular_tree_json(request, skip=0):
 			#csv_data = csv_data + ("root." + contract.approbateur + "." + contract.description, '')
 			dictApprob[contract.approbateur] = 1
 			if (not contract.approbateur.replace(",","").replace(" ","").replace(".","") == ""):
-				writer.writerow(["flare." + contract.approbateur.replace(",","").replace(" ","").replace(".",""), ""])
+				writer.writerow(["MTL." + contract.approbateur.replace(",","").replace(" ","").replace(".",""), ""])
 		#print(currentService)
 		#arrayRoot.append("root." + contract.approbateur + "." + contract.description + "," + str(contract.montant))
 		#csv_data = csv_data +("root." + contract.approbateur + "." + contract.description, str(contract.montant))
 		if (not contract.approbateur.replace(",","").replace(" ","") == ""):
-			writer.writerow(["flare." + contract.approbateur.replace(",","").replace(" ","").replace(".","") + "." + "test"])
+			writer.writerow(["MTL." + contract.approbateur.replace(",","").replace(" ","").replace(".","") + "." + "osef", contract.montant])
 	
 
 	print("wtf")
