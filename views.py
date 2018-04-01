@@ -291,3 +291,57 @@ def concentric(request, skip=0):
 		}
 
 	return HttpResponse(template.render(context, request))
+
+def circular_tree_json(request, skip=0):
+
+	# CONST
+	response = HttpResponse(content_type='text/csv')
+	response['Content-Disposition'] = 'attachment; filename="somefilename.csv"'
+	writer = csv.writer(response)
+	writer.writerow(['id', 'value'])
+	# Array to store nodes:
+	arrayRoot = []
+	dictApprob = {}
+	csv_data = ()
+	ListContract = Contrat.objects.all()
+
+	#arrayRoot.append("root,")
+	#csv_data = csv_data + ("root,",'')
+	writer.writerow(['flare', ''	])
+
+	for contract in ListContract:
+		try:
+			if(contract.approbateur == "" or contract.approbateur == " "):
+				pass
+			if(dictApprob[contract.approbateur]):
+				pass
+		except:
+			#arrayRoot.append("root." + contract.approbateur + ",")
+			#csv_data = csv_data + ("root." + contract.approbateur + "." + contract.description, '')
+			dictApprob[contract.approbateur] = 1
+			if (not contract.approbateur.replace(",","").replace(" ","").replace(".","") == ""):
+				writer.writerow(["flare." + contract.approbateur.replace(",","").replace(" ","").replace(".",""), ""])
+		#print(currentService)
+		#arrayRoot.append("root." + contract.approbateur + "." + contract.description + "," + str(contract.montant))
+		#csv_data = csv_data +("root." + contract.approbateur + "." + contract.description, str(contract.montant))
+		if (not contract.approbateur.replace(",","").replace(" ","") == ""):
+			writer.writerow(["flare." + contract.approbateur.replace(",","").replace(" ","").replace(".","") + "." + "test"])
+	
+
+	print("wtf")
+
+	return response
+
+def circular_tree(request, skip=0):
+	print()
+	template = loader.get_template('circular_tree.html')
+	
+
+
+	#Generate context for the tree	
+
+	context = {'graph':"/dataviz/circular_tree_json",				
+			}
+
+
+	return HttpResponse(template.render(context, request))

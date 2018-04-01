@@ -13,8 +13,8 @@ urlpatterns = [
     path('force_layout', views.force_layout, name='force_layout'),
     path('treemap_json', views.treemap_json, name='treemap_json'),
     path('treemap', views.treemap, name='treemap'),
-    path('concentric_json/<int:skip>/', views.concentric_json, name='concentric_json'),
-    path('concentric/<int:skip>/', views.concentric, name='concentric'),
     path('concentric_json', views.concentric_json, name='concentric_json'),
     path('concentric', views.concentric, name='concentric'),
+    path('circular_tree_json', views.circular_tree_json, name='circular_tree_json'),
+    path('circular_tree', views.circular_tree, name='circular_tree'),
 ]
