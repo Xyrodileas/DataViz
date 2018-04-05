@@ -90,11 +90,11 @@ def upload_success(request):
 def tree(request, workstation="undefined"):
 	print()
 	template = loader.get_template('tree.html')
-	
+	nbrApprob = ListApprob = Approbateur.objects.all().count()
 
 
 	#Generate context for the tree	
-	context = {'graph':"/dataviz/json",
+	context = {'graph':"/dataviz/json", 'nbrApprob':nbrApprob
 				
 			}
 
