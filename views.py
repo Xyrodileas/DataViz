@@ -345,3 +345,43 @@ def circular_tree(request, skip=0):
 
 
 	return HttpResponse(template.render(context, request))
+
+def histogram_json(request, skip=0):
+
+	# Prepare first nodes
+
+	# Array to store nodes:
+	arrayApprobateurs = []
+	arrayRoot = []
+
+	ListApprob = Approbateur.objects.all()
+
+	
+	for approb in ListApprob:
+		#print(approb.approbateur)
+		children = []
+
+		nbrContracts = Contrat.objects.all().filter(approbateur=approb.approbateur).count()
+
+		arrayApprobateurs.append({ "Letter" : approb.approbateur, "Freq" : nbrContracts })
+			
+
+
+	
+	context = js.dumps(arrayApprobateurs)
+
+	return HttpResponse(context)
+
+def histogram(request, skip=0):
+	print()
+	template = loader.get_template('histogram.html')
+	
+
+
+	#Generate context for the tree	
+
+	context = {'graph':"/dataviz/histogram_json",				
+			}
+
+
+	return HttpResponse(template.render(context, request))

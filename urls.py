@@ -17,4 +17,6 @@ urlpatterns = [
     path('concentric', views.concentric, name='concentric'),
     path('circular_tree_json', views.circular_tree_json, name='circular_tree_json'),
     path('circular_tree', views.circular_tree, name='circular_tree'),
+    path('histogram_json', views.histogram_json, name='histogram_json'),
+    path('histogram', views.histogram, name='histogram'),
 ]
