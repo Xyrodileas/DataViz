@@ -36,7 +36,7 @@
 
 <script>
 // set the dimensions of the canvas
-var margin = {top: 20, right: 20, bottom: 70, left: 40},
+var margin = {top: 20, right: 20, bottom: 300, left: 40},
     width = 2600 - margin.left - margin.right,
     height = 600 - margin.top - margin.bottom;
 
@@ -98,7 +98,7 @@ d3.json("{{ graph }}", function(error, data) {
       .attr("y", 5)
       .attr("dy", ".71em")
       .style("text-anchor", "end")
-      .text("Frequency");
+      .text("Nombre de contrats");
 
 
   // Add bar chart

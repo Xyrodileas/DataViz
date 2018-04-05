@@ -102,7 +102,7 @@
     function update(data, bindTo) {
 
         const maxNbrContrat = d3.max(data, d => d.nbrContrat)
-        // area of each circle taking the highest number of students 
+
         const sqrtScale = d3.scaleSqrt()
             .domain([0, maxNbrContrat])
             .range([0, 110])
@@ -116,7 +116,7 @@
         const enter = update.enter()
             .append('div')
             .attr('class', 'block js-circle')
-        // create a title which is a link
+
         enter.merge(update)
             .append('a')
             .attr('href', d => d.link)
