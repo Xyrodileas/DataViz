@@ -182,7 +182,7 @@ def force_layout_json(request):
 
 	ListApprob = Approbateur.objects.all()
 
-	arrayNodeLayout.append({"id" : "ROOT", "group" : 0})
+	arrayNodeLayout.append({"id" : "Montreal", "group" : 0})
 	for approb in ListApprob:
 		print(approb.approbateur)
 
@@ -190,7 +190,7 @@ def force_layout_json(request):
 
 		if(iTotalContrats["montant__sum"]):
 			arrayNodeLayout.append({"id" : approb.approbateur, "group" : 1})
-			arrayForceLayout.append({"source" : "ROOT", "target" : approb.approbateur , "value": (iTotalContrats["montant__sum"]*0.001)/3})
+			arrayForceLayout.append({"source" : "Montreal", "target" : approb.approbateur , "value": (iTotalContrats["montant__sum"]*0.001)/3})
 
 
 	DictResult = {}
