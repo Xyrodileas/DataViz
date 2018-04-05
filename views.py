@@ -325,7 +325,7 @@ def circular_tree_json(request, skip=0):
 		#arrayRoot.append("root." + contract.approbateur + "." + contract.description + "," + str(contract.montant))
 		#csv_data = csv_data +("root." + contract.approbateur + "." + contract.description, str(contract.montant))
 		if (not contract.approbateur.replace(",","").replace(" ","") == ""):
-			writer.writerow(["MTL." + contract.approbateur.replace(",","").replace(" ","").replace(".","") + "." + contract.description, contract.montant])
+			writer.writerow(["MTL." + contract.approbateur.replace(",","").replace(" ","").replace(".","") + "." + ''.join(e for e in contract.description if e.isalnum()), contract.montant])
 	
 
 	print("wtf")
